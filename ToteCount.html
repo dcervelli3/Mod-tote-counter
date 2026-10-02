@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tally</title>
+<style>
+:root{--bg:#eef2f4;--card:#fff;--ink:#14262e;--mute:#6a7f88;--acc:#0f766e;--accInk:#fff;--line:#d5dee2;--danger:#b4372c;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1a20;--card:#162a33;--ink:#e6f0f3;--mute:#8aa3ad;--acc:#2dd4bf;--accInk:#062a26;--line:#25414c;--danger:#f08a7e}}
+:root[data-theme="dark"]{--bg:#0e1a20;--card:#162a33;--ink:#e6f0f3;--mute:#8aa3ad;--acc:#2dd4bf;--accInk:#062a26;--line:#25414c;--danger:#f08a7e}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Outfit",system-ui,sans-serif;min-height:100%}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 90px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+h1{font-size:26px;margin:0;font-weight:700}
+.total{color:var(--mute);font-size:14px}
+button{font:inherit;color:inherit;border:0;cursor:pointer;touch-action:manipulation}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 14px;font-size:14px}
+.chip.pri{background:var(--acc);color:var(--accInk);border-color:var(--acc);font-weight:600}
+.item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.item input.name{flex:1;min-width:0;background:transparent;border:0;color:var(--ink);font:inherit;font-size:17px;font-weight:500;padding:6px 2px}
+.item input.name:focus{outline:2px solid var(--acc);border-radius:6px}
+.item{flex-wrap:wrap}
+.qs{display:flex;gap:8px;width:100%}
+.qs button{flex:1;height:52px;border-radius:12px;font-size:20px;font-weight:600;background:var(--acc);color:var(--accInk)}
+.sub .qs button{background:var(--danger);color:#fff}
+.qs button:active{transform:scale(.95)}
+.mode{display:flex;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:12px;position:sticky;top:env(safe-area-inset-top,0px);z-index:2}
+.mode button{flex:1;padding:12px;border-radius:10px;background:transparent;font-size:17px;font-weight:600;color:var(--mute)}
+.mode button.on{background:var(--acc);color:var(--accInk)}
+.mode.sub button.on{background:var(--danger);color:#fff}
+.n{min-width:56px;text-align:right;font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
+.x{background:transparent;color:var(--mute);font-size:18px;width:30px;height:30px;padding:0}
+.empty{text-align:center;color:var(--mute);padding:36px 10px}
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--ink);width:min(92vw,420px);padding:16px}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+dialog h2{margin:0 0 10px;font-size:19px}
+.pre{display:flex;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.pre b{flex:1;font-weight:500}.pre small{color:var(--mute);display:block}
+.pre button{padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:14px}
+.pre .del{color:var(--danger)}
+dialog input[type=text]{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;margin:6px 0 10px}
+label.chk{display:flex;gap:8px;align-items:center;margin-bottom:12px;font-size:15px}
+.bar{position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);border-top:1px solid var(--line)}
+.bar .in{max-width:560px;margin:0 auto;display:flex;gap:8px}
+.bar .chip{flex:1;text-align:center}
+.lnk{background:none;color:var(--mute);font-size:13px;text-decoration:underline;padding:8px}
+textarea{width:100%;height:90px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:12px ui-monospace,monospace;margin:6px 0 8px}
+.col{display:flex;flex-direction:column}
+.col button{width:32px;height:26px;padding:0;background:none;color:var(--mute);font-size:14px;opacity:.8}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1>Tally</h1><div class="total" id="total"></div></header>
+  <div class="row">
+    <button class="chip" id="bPresets">Presets</button>
+    <button class="chip" id="bSave">Save as preset</button>
+    <button class="chip" id="bQty">Quantities</button>
+    <button class="chip" id="bReset">Reset counts</button>
+  </div>
+  <div class="mode" id="mode"><button data-m="add">Add +</button><button data-m="sub">Subtract −</button></div>
+  <div id="list"></div>
+  <div style="text-align:center;margin-top:14px"><button class="lnk" id="bBak">Backup &amp; restore</button></div>
+</div>
+<div class="bar"><div class="in"><button class="chip pri" id="bAdd">+ Add item</button></div></div>
+
+<dialog id="dPre"><h2>Presets</h2><div id="preList"></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button class="chip" id="bPx">Import preset</button><button class="chip" id="cPre">Close</button></div></dialog>
+<dialog id="dQty"><h2>Quantity buttons</h2>
+  <p style="color:var(--mute);margin:0;font-size:14px">Numbers separated by commas, up to 6.</p>
+  <input type="text" id="qIn" inputmode="decimal">
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="chip" id="cQty">Cancel</button><button class="chip pri" id="okQty">Save</button></div>
+</dialog>
+<dialog id="dItem"><h2>Edit item</h2>
+  <input type="text" id="iName" maxlength="40">
+  <p style="color:var(--mute);margin:0;font-size:14px">Quantity buttons for this item. Leave blank to use the default set.</p>
+  <input type="text" id="iQ" inputmode="decimal">
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="chip" id="cItem">Cancel</button><button class="chip pri" id="okItem">Save</button></div>
+</dialog>
+<dialog id="dBak"><h2>Backup &amp; restore</h2>
+  <p style="color:var(--mute);margin:0;font-size:14px">Export copies everything: items, counts, per-item quantities, presets.</p>
+  <textarea id="bOut" readonly></textarea>
+  <button class="chip" id="bCopy">Copy export</button>
+  <p style="color:var(--mute);margin:14px 0 0;font-size:14px">Import replaces everything on this device.</p>
+  <textarea id="bIn" placeholder="Paste exported text here"></textarea>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="chip" id="cBak">Close</button><button class="chip pri" id="okBak">Import</button></div>
+</dialog>
+<dialog id="dPx"><h2 id="xT"></h2>
+  <div id="xE"><textarea id="xOut" readonly></textarea><button class="chip" id="xCopy">Copy</button></div>
+  <div id="xI"><p style="color:var(--mute);margin:0;font-size:14px">Adds the preset. Your existing presets stay.</p><textarea id="xIn" placeholder="Paste a preset export here"></textarea><button class="chip pri" id="xOk">Add preset</button></div>
+  <div style="text-align:right;margin-top:12px"><button class="chip" id="xClose">Close</button></div>
+</dialog>
+<dialog id="dAsk"><p id="aMsg" style="margin:0 0 14px;font-size:17px"></p><div style="display:flex;gap:8px;justify-content:flex-end"><button class="chip" id="aNo">Cancel</button><button class="chip pri" id="aOk">OK</button></div></dialog>
+<dialog id="dSave"><h2>Save preset</h2>
+  <input type="text" id="pName" placeholder="Preset name" maxlength="40">
+  <label class="chk"><input type="checkbox" id="pVals"> Also save current counts</label>
+  <div style="display:flex;gap:8px;justify-content:flex-end"><button class="chip" id="cSave">Cancel</button><button class="chip pri" id="okSave">Save</button></div>
+</dialog>
+
+<script>
+const K='tally-v1';
+let S={items:[],presets:[]};
+try{const r=localStorage.getItem(K);if(r)S=JSON.parse(r)}catch(e){}
+if(!S.q||S.q.join()==='1,5,10,25')S.q=[1,5,6,10,12];
+if(!S.mode)S.mode='add';
+const DEF={"name": "Tote count", "items": [{"name": "Start Up (pallets)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "North (stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "Blue Bottoms North", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "North West (pallets)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "HVP (stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "Dirty Totes (stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "West (stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "South West (pallets)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "South (stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "Blue Bottoms South", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "VRC/Singles (pallets)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "East (Stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "Ship Dock Corral (pallets)", "n": 0, "q": [1, 5, 6, 10, 12]}, {"name": "Jackpot (stacks)", "n": 0, "q": [1, 5, 6, 10, 12]}]};
+const fresh=!S.items.length&&!S.presets.length;
+if(!S.seeded){if(!S.presets.some(p=>p.name===DEF.name))S.presets.unshift(DEF);S.seeded=1}
+if(fresh)S.items=DEF.items.map((x,i)=>({id:i+1,...x}));
+const $=id=>document.getElementById(id);
+let uid=Date.now();
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
+const buzz=()=>{try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}};
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function ask(msg,ok,no){return new Promise(r=>{$('aMsg').textContent=msg;$('aOk').textContent=ok||'OK';$('aNo').style.display=no===null?'none':'';const d=$('dAsk');d.oncancel=()=>r(false);$('aOk').onclick=()=>{d.close();r(true)};$('aNo').onclick=()=>{d.close();r(false)};d.showModal()})}
+function render(){
+  const l=$('list');
+  l.innerHTML=S.items.length?S.items.map(i=>`<div class="item" data-id="${i.id}">
+    <div class="col"><button data-a="u" aria-label="Move up">▲</button><button data-a="v" aria-label="Move down">▼</button></div><input class="name" value="${esc(i.name)}" aria-label="Item name">
+    <div class="n">${i.n}</div><div class="col"><button data-a="e" aria-label="Edit item">✎</button><button data-a="d" aria-label="Remove item">✕</button></div>
+    <div class="qs">${(i.q||S.q).map(v=>`<button data-a="q" data-v="${v}">${S.mode==='sub'?'−':'+'}${v}</button>`).join('')}</div></div>`).join('')
+    :'<div class="empty">No items yet. Tap “Add item” or load a preset.</div>';
+  $('mode').className='mode '+S.mode;document.querySelectorAll('#mode button').forEach(b=>b.classList.toggle('on',b.dataset.m===S.mode));
+  $('total').textContent=S.items.length?`Total ${S.items.reduce((a,i)=>a+i.n,0)}`:'';
+  save();
+}
+function find(el){const r=el.closest('.item');return r&&S.items.find(i=>i.id==r.dataset.id)}
+$('list').addEventListener('click',async e=>{
+  const b=e.target.closest('button');if(!b)return;const it=find(b);if(!it)return;
+  if(b.dataset.a==='u'||b.dataset.a==='v'){const k=S.items.indexOf(it),j=k+(b.dataset.a==='u'?-1:1);if(j<0||j>=S.items.length)return;
+    const sel=()=>document.querySelector('.item[data-id="'+it.id+'"]');const t0=sel().getBoundingClientRect().top;
+    [S.items[k],S.items[j]]=[S.items[j],S.items[k]];render();window.scrollBy(0,sel().getBoundingClientRect().top-t0);return}
+  if(b.dataset.a==='e'){editId=it.id;$('iName').value=it.name;$('iQ').value=(it.q||[]).join(', ');$('iQ').placeholder='Default: '+S.q.join(', ');$('dItem').showModal();return}
+  if(b.dataset.a==='q'){const v=+b.dataset.v;it.n=Math.max(0,it.n+(S.mode==='sub'?-v:v));buzz()}
+  else if(b.dataset.a==='d'){if(!(await ask(`Remove “${it.name}”?`,'Remove')))return;S.items=S.items.filter(x=>x!==it)}
+  render();
+});
+$('list').addEventListener('input',e=>{if(e.target.classList.contains('name')){const it=find(e.target);if(it){it.name=e.target.value;save()}}});
+$('mode').onclick=e=>{const b=e.target.closest('button');if(b){S.mode=b.dataset.m;render()}};
+$('bQty').onclick=()=>{$('qIn').value=S.q.join(', ');$('dQty').showModal()};
+$('cQty').onclick=()=>$('dQty').close();
+$('okQty').onclick=()=>{const q=$('qIn').value.split(/[ ,]+/).map(Number).filter(n=>n>0&&isFinite(n)).slice(0,6);if(!q.length){$('qIn').focus();return}S.q=q;$('dQty').close();render()};
+let editId=null;
+const parseQ=t=>t.split(/[ ,]+/).map(Number).filter(n=>n>0&&isFinite(n)).slice(0,6);
+$('cItem').onclick=()=>$('dItem').close();
+$('okItem').onclick=()=>{const it=S.items.find(x=>x.id===editId);if(it){const nm=$('iName').value.trim();if(nm)it.name=nm;const q=parseQ($('iQ').value);if(q.length)it.q=q;else delete it.q}$('dItem').close();render()};
+$('bBak').onclick=()=>{$('bOut').value=JSON.stringify({app:'tally',v:2,q:S.q,mode:S.mode,items:S.items,presets:S.presets});$('bIn').value='';$('dBak').showModal()};
+$('cBak').onclick=()=>$('dBak').close();
+$('bCopy').onclick=async()=>{const o=$('bOut');try{await navigator.clipboard.writeText(o.value)}catch(e){o.select();document.execCommand('copy')}$('bCopy').textContent='Copied';setTimeout(()=>$('bCopy').textContent='Copy export',1500)};
+$('okBak').onclick=async()=>{
+  let d;try{d=JSON.parse($('bIn').value)}catch(e){ask('That text is not a valid export.','OK',null);return}
+  if(!d||d.app!=='tally'||!Array.isArray(d.items)||!Array.isArray(d.presets)){ask('That text is not a Tally export.','OK',null);return}
+  if(!(await ask('Replace everything on this device with the imported data?','Replace')))return;
+  const cq=a=>Array.isArray(a)?parseQ(a.join(',')):[];
+  const it=x=>{const o={name:String(x.name||'Item').slice(0,40),n:Math.max(0,+x.n||0)};const q=cq(x.q);if(q.length)o.q=q;return o};
+  S.q=cq(d.q).length?cq(d.q):[1,5,6,10,12];S.mode=d.mode==='sub'?'sub':'add';
+  S.items=d.items.map(x=>({id:++uid,...it(x)}));
+  S.presets=d.presets.map(p=>({name:String(p.name||'Preset').slice(0,40),items:(p.items||[]).map(it)}));
+  $('dBak').close();render();
+};
+const cleanItem=x=>{const o={name:String(x.name||'Item').slice(0,40),n:Math.max(0,+x.n||0)};const q=Array.isArray(x.q)?parseQ(x.q.join(',')):[];if(q.length)o.q=q;return o};
+function showPx(p){const ex=!!p;$('xE').style.display=ex?'':'none';$('xI').style.display=ex?'none':'';
+  $('xT').textContent=ex?'Export “'+p.name+'”':'Import preset';
+  if(ex)$('xOut').value=JSON.stringify({app:'tally',v:2,preset:p});else $('xIn').value='';
+  $('xCopy').textContent='Copy';$('dPx').showModal()}
+$('bPx').onclick=()=>showPx(null);
+$('xClose').onclick=()=>$('dPx').close();
+$('xCopy').onclick=async()=>{const o=$('xOut');try{await navigator.clipboard.writeText(o.value)}catch(e){o.select();document.execCommand('copy')}$('xCopy').textContent='Copied'};
+$('xOk').onclick=()=>{let d;try{d=JSON.parse($('xIn').value)}catch(e){ask('That text is not valid.','OK',null);return}
+  if(d&&d.app==='tally'&&Array.isArray(d.items)){ask('That is a full backup. Use Backup & restore instead.','OK',null);return}
+  if(!d||d.app!=='tally'||!d.preset||!Array.isArray(d.preset.items)){ask('That text is not a Tally preset.','OK',null);return}
+  let name=String(d.preset.name||'Preset').slice(0,40);const base=name;let k=2;
+  while(S.presets.some(x=>x.name===name))name=base+' ('+(k++)+')';
+  S.presets.push({name,items:d.preset.items.map(cleanItem)});save();renderPresets();$('dPx').close()};
+$('bAdd').onclick=()=>{S.items.push({id:++uid,name:'Item '+(S.items.length+1),n:0});render();const ins=document.querySelectorAll('.name');const f=ins[ins.length-1];f.focus();f.select()};
+$('bReset').onclick=async()=>{if(S.items.some(i=>i.n)&&await ask('Set all counts back to 0?','Reset')){S.items.forEach(i=>i.n=0);render()}};
+
+function renderPresets(){
+  $('preList').innerHTML=S.presets.length?S.presets.map((p,k)=>`<div class="pre"><b>${esc(p.name)}<small>${p.items.length} items${p.items.some(i=>i.n)?', with counts':''}</small></b><button data-k="${k}" data-a="load">Load</button><button data-k="${k}" data-a="exp">Export</button><button class="del" data-k="${k}" data-a="del" aria-label="Delete preset">✕</button></div>`).join('')
+  :'<p style="color:var(--mute)">No presets yet. Set up your items, then tap “Save as preset”.</p>';
+}
+$('bPresets').onclick=()=>{renderPresets();$('dPre').showModal()};
+$('cPre').onclick=()=>$('dPre').close();
+$('preList').onclick=async e=>{
+  const b=e.target.closest('button');if(!b)return;const p=S.presets[b.dataset.k];
+  if(b.dataset.a==='exp'){showPx(p);return}
+  if(b.dataset.a==='del'){if(await ask(`Delete preset “${p.name}”?`,'Delete')){S.presets.splice(b.dataset.k,1);save();renderPresets()}}
+  else{S.items=p.items.map(i=>({id:++uid,name:i.name,n:i.n||0,q:i.q}));render();$('dPre').close()}
+};
+$('bSave').onclick=()=>{$('pName').value='';$('pVals').checked=false;$('dSave').showModal();$('pName').focus()};
+$('cSave').onclick=()=>$('dSave').close();
+$('okSave').onclick=async()=>{
+  const name=$('pName').value.trim();if(!name){$('pName').focus();return}
+  const v=$('pVals').checked;
+  const p={name,items:S.items.map(i=>({name:i.name,n:v?i.n:0,q:i.q}))};
+  const ex=S.presets.findIndex(x=>x.name===name);
+  if(ex>=0){if(!(await ask('Replace the existing preset named “'+name+'”?','Replace')))return;S.presets[ex]=p}else S.presets.push(p);
+  save();$('dSave').close();
+};
+render();
+</script>
+</body>
+</html>
